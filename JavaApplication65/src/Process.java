@@ -1,14 +1,7 @@
-
-
-
 import java.util.*;
+
 class Process {
-    int id;
-    int arrivalTime;
-    int burstTime;
-    int remainingTime;
-    int startTime;
-    int finishTime;
+    int id, arrivalTime, burstTime, remainingTime, startTime, finishTime;
 
     public Process(int id, int arrivalTime, int burstTime) {
         this.id = id;
@@ -19,4 +12,3 @@ class Process {
         this.finishTime = -1;
     }
 }
-
