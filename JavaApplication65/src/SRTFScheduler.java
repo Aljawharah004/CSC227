@@ -1,7 +1,6 @@
 
-
-
 import java.util.*;
+
 public class SRTFScheduler {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -26,6 +25,7 @@ public class SRTFScheduler {
         int totalCPUTime = 0, totalIdleTime = 0;
         PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remainingTime));
         Process lastProcess = null;
+        Integer executionStart = null;
 
         System.out.println("\nScheduling Algorithm: Shortest Remaining Time First");
         System.out.println("Context Switch: " + contextSwitchTime + " ms");
@@ -50,20 +50,31 @@ public class SRTFScheduler {
             }
 
             if (lastProcess != null && lastProcess != currentProcess) {
-                System.out.println((currentTime) + "-" + (currentTime + contextSwitchTime) + "\tCS");
+                if (executionStart != null) {
+                    System.out.println(executionStart + "-" + currentTime + "\tP" + lastProcess.id);
+                }
+                System.out.println(currentTime + "-" + (currentTime + contextSwitchTime) + "\tCS");
                 currentTime += contextSwitchTime;
                 totalIdleTime += contextSwitchTime;
+                executionStart = currentTime;
             }
 
-            System.out.println((currentTime) + "-" + (currentTime + 1) + "\tP" + currentProcess.id);
+            if (executionStart == null || lastProcess != currentProcess) {
+                executionStart = currentTime;
+            }
+
             currentProcess.remainingTime--;
             totalCPUTime++;
             currentTime++;
             lastProcess = currentProcess;
 
             if (currentProcess.remainingTime == 0) {
+                if (executionStart != null) {
+                    System.out.println(executionStart + "-" + currentTime + "\tP" + currentProcess.id);
+                }
                 currentProcess.finishTime = currentTime;
                 completedProcesses++;
+                executionStart = null;
             }
         }
 
