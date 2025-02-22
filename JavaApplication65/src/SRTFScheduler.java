@@ -23,7 +23,12 @@ public class SRTFScheduler {
     private static void simulateSRTF(Process[] processes, int n) {
         int currentTime = 0, completedProcesses = 0, contextSwitchTime = 1;
         int totalCPUTime = 0, totalIdleTime = 0;
-        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remainingTime));
+//        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remainingTime));
+        PriorityQueue<Process> queue = new PriorityQueue<>(
+            Comparator.comparingInt((Process p) -> p.remainingTime)
+                      .thenComparingInt(p -> p.arrivalTime)
+                      .thenComparingInt(p -> p.id) // Ensures stable sorting if arrival times are equal
+        );
         Process lastProcess = null;
         Integer executionStart = null;
 
