@@ -20,14 +20,15 @@ public class SRTFScheduler {
         simulateSRTF(processes, n);
     }
 
-    private static void simulateSRTF(Process[] processes, int n) {
+    private static void simulateSRTF(Process[] processes, int n) { //n is number of processes
         int currentTime = 0, completedProcesses = 0, contextSwitchTime = 1;
-        int totalCPUTime = 0, totalIdleTime = 0;
+        int totalCPUTime = 0, totalIdleTime = 0; //variables used in Performance Metrics
+        
 //        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remainingTime));
         PriorityQueue<Process> queue = new PriorityQueue<>(
             Comparator.comparingInt((Process p) -> p.remainingTime)
                       .thenComparingInt(p -> p.arrivalTime)
-                      .thenComparingInt(p -> p.id) // Ensures stable sorting if arrival times are equal
+                      .thenComparingInt(p -> p.id) // Ensures stable sorting if arrival times are equal (FCFS)
         );
         Process lastProcess = null;
         Integer executionStart = null;
@@ -38,7 +39,7 @@ public class SRTFScheduler {
 
         while (completedProcesses < n) {
             for (Process p : processes) {
-                if (p.arrivalTime <= currentTime && p.remainingTime > 0 && !queue.contains(p)) {
+                if (p.arrivalTime <= currentTime && p.remainingTime > 0 && !queue.contains(p)) { //(Preemptive SJF
                     queue.add(p);
                 }
             }
@@ -49,12 +50,12 @@ public class SRTFScheduler {
                 continue;
             }
 
-            Process currentProcess = queue.poll();
+            Process currentProcess = queue.poll(); //pull
             if (currentProcess.startTime == -1) {
                 currentProcess.startTime = currentTime;
             }
 
-            if (lastProcess != null && lastProcess != currentProcess) {
+            if (lastProcess != null && lastProcess != currentProcess) { //printing processes and context switching with their time
                 if (executionStart != null) {
                     System.out.println(executionStart + "-" + currentTime + "\tP" + lastProcess.id);
                 }
