@@ -1,13 +1,18 @@
 
 import java.util.*;
 
-public class SRTFScheduler {
+public class SRTFScheduler { 
+    
     public static void main(String[] args) {
+        // Create scanner object for user input
         Scanner sc = new Scanner(System.in);
+        
+        // Get number of processes from the user
         System.out.print("Enter the number of processes: ");
         int n = sc.nextInt();
         Process[] processes = new Process[n];
 
+        // Collect arrival and burst times for each process
         for (int i = 0; i < n; i++) {
             System.out.print("Enter arrival time for P" + (i + 1) + ": ");
             int arrivalTime = sc.nextInt();
@@ -16,52 +21,91 @@ public class SRTFScheduler {
             processes[i] = new Process(i + 1, arrivalTime, burstTime);
         }
 
+        // Sort processes by arrival time
         Arrays.sort(processes, Comparator.comparingInt(p -> p.arrivalTime));
+
+        // Print out the number of processes and their arrival and burst times
+        System.out.println("\nNumber of processes = " + n + " (P1, P2, P3, P4)");
+        System.out.println("Arrival times and burst times as follows:");
+        for (Process p : processes) {
+            System.out.println("P" + p.id + ": Arrival time = " + p.arrivalTime + ", Burst time = " + p.burstTime + " ms");
+        }
+
+        // Start the simulation for SRTF scheduling
         simulateSRTF(processes, n);
     }
 
-    private static void simulateSRTF(Process[] processes, int n) { //n is number of processes
-        int currentTime = 0, completedProcesses = 0, contextSwitchTime = 1;
-        int totalCPUTime = 0, totalIdleTime = 0; //variables used in Performance Metrics
-        
-//        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remainingTime));
-        PriorityQueue<Process> queue = new PriorityQueue<>(
+    private static void simulateSRTF(Process[] processes, int n) {
+        PriorityQueue<Event> eventQueue = new PriorityQueue<>(Comparator.comparingInt(e -> e.time));
+        PriorityQueue<Process> readyQueue = new PriorityQueue<>(
             Comparator.comparingInt((Process p) -> p.remainingTime)
                       .thenComparingInt(p -> p.arrivalTime)
-                      .thenComparingInt(p -> p.id) // Ensures stable sorting if arrival times are equal (FCFS)
+                      .thenComparingInt(p -> p.id)
         );
+
+        int currentTime = 0, completedProcesses = 0, contextSwitchTime = 1;
+        int totalCPUTime = 0, totalIdleTime = 0;
         Process lastProcess = null;
         Integer executionStart = null;
 
-        System.out.println("\nScheduling Algorithm: Shortest Remaining Time First");
+        // Initialize event queue with arrival events
+        for (Process p : processes) {
+            eventQueue.add(new Event(p.arrivalTime, "ARRIVAL", p));
+        }
+
+        System.out.println("\nScheduling Algorithm: Shortest remaining time first");
         System.out.println("Context Switch: " + contextSwitchTime + " ms");
         System.out.println("Time\tProcess/CS");
 
         while (completedProcesses < n) {
-            for (Process p : processes) {
-                if (p.arrivalTime <= currentTime && p.remainingTime > 0 && !queue.contains(p)) { //(Preemptive SJF
-                    queue.add(p);
+            // Add newly arrived processes to the ready queue
+            while (!eventQueue.isEmpty() && eventQueue.peek().time <= currentTime) {
+                Event event = eventQueue.poll();
+                if ("ARRIVAL".equals(event.type)) {
+                    readyQueue.add(event.process);
                 }
             }
 
-            if (queue.isEmpty()) {
+            if (readyQueue.isEmpty()) {
+                System.out.println(currentTime + "-" + (currentTime + 1) + "\tIdle");
                 totalIdleTime++;
                 currentTime++;
                 continue;
             }
 
-            Process currentProcess = queue.poll(); //pull
+            Process currentProcess = readyQueue.poll();
+
+            // Set start time if this is the first time the process is executed
             if (currentProcess.startTime == -1) {
                 currentProcess.startTime = currentTime;
             }
 
-            if (lastProcess != null && lastProcess != currentProcess) { //printing processes and context switching with their time
+            // Handle context switch if switching processes
+            if (lastProcess != null && lastProcess != currentProcess) {
                 if (executionStart != null) {
                     System.out.println(executionStart + "-" + currentTime + "\tP" + lastProcess.id);
                 }
                 System.out.println(currentTime + "-" + (currentTime + contextSwitchTime) + "\tCS");
                 currentTime += contextSwitchTime;
                 totalIdleTime += contextSwitchTime;
+
+                // Re-check for newly arrived processes during the context switch
+                while (!eventQueue.isEmpty() && eventQueue.peek().time <= currentTime) {
+                    Event event = eventQueue.poll();
+                    if ("ARRIVAL".equals(event.type)) {
+                        readyQueue.add(event.process);
+                    }
+                }
+
+                // If a new process with a shorter remaining time has arrived, preempt the current process
+                if (!readyQueue.isEmpty() && readyQueue.peek().remainingTime < currentProcess.remainingTime) {
+                    readyQueue.add(currentProcess); // Re-add the current process to the queue
+                    currentProcess = readyQueue.poll(); // Get the new shortest process
+                    System.out.println(currentTime + "-" + (currentTime + contextSwitchTime) + "\tCS");
+                    currentTime += contextSwitchTime;
+                    totalIdleTime += contextSwitchTime;
+                }
+
                 executionStart = currentTime;
             }
 
@@ -69,11 +113,12 @@ public class SRTFScheduler {
                 executionStart = currentTime;
             }
 
+            // Execute the process for 1ms
             currentProcess.remainingTime--;
             totalCPUTime++;
             currentTime++;
-            lastProcess = currentProcess;
 
+            // If the process finishes, log its completion
             if (currentProcess.remainingTime == 0) {
                 if (executionStart != null) {
                     System.out.println(executionStart + "-" + currentTime + "\tP" + currentProcess.id);
@@ -81,7 +126,12 @@ public class SRTFScheduler {
                 currentProcess.finishTime = currentTime;
                 completedProcesses++;
                 executionStart = null;
+            } else {
+                // Re-add the process to the queue if it hasn't finished
+                readyQueue.add(currentProcess);
             }
+
+            lastProcess = currentProcess;
         }
 
         calculatePerformanceMetrics(processes, n, totalCPUTime, totalIdleTime);
@@ -100,6 +150,7 @@ public class SRTFScheduler {
         double avgWaitingTime = (double) totalWaitingTime / n;
         double cpuUtilization = (double) totalCPUTime / (totalCPUTime + totalIdleTime) * 100;
 
+        // Print performance metrics
         System.out.println("\nPerformance Metrics");
         System.out.printf("Average Turnaround Time: %.2f\n", avgTurnaroundTime);
         System.out.printf("Average Waiting Time: %.2f\n", avgWaitingTime);
