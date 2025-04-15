@@ -1,4 +1,8 @@
+package assignment1;
 
+
+import assignment1.Process;
+import assignment1.Event;
 import java.util.*;
 
 public class SRTFScheduler { 

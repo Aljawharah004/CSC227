@@ -1,3 +1,5 @@
+package assignment1;
+
 class Event {
         int time;
         String type;

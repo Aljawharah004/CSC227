@@ -1,3 +1,5 @@
+package assignment2;
+
 class MemoryBlock {
     int size;
     int startAddress;
