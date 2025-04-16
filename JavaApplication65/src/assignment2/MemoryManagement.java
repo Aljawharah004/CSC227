@@ -81,78 +81,85 @@ public class MemoryManagement {
         }
     }
 
-private static void allocateMemory() {
-    System.out.print("Enter process ID and size of process: ");
-    String processID = scanner.next();
-    int processSize = scanner.nextInt();
-
-    // Check if the process ID already exists in memory
-    for (MemoryBlock block : memoryBlocks) {
-        if (block.isAllocated && block.processID.equalsIgnoreCase(processID)) {
-            System.out.println("Error: Process ID " + processID + " already allocated. Please use a unique Process ID.");
-            return; // Exit the method without allocating memory
-        }
-    }
-
-    MemoryBlock selectedBlock = null;
-
-    // Debugging: Print current memory blocks and allocation strategy
-    System.out.println("Allocating memory using strategy: " + (allocationStrategy == 1 ? "First-Fit" : (allocationStrategy == 2 ? "Best-Fit" : "Worst-Fit")));
-
-    // Apply First-Fit Allocation strategy
-    if (allocationStrategy == 1) {
-        for (MemoryBlock block : memoryBlocks) {
-            System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
-            if (!block.isAllocated && block.size >= processSize) {
-                selectedBlock = block; // Found a block that fits
-                break; // No need to continue searching once a valid block is found
-            }
-        }
-    } else if (allocationStrategy == 2) { // Best-Fit Allocation strategy
-        int minSize = Integer.MAX_VALUE;
-        for (MemoryBlock block : memoryBlocks) {
-            System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
-            if (!block.isAllocated && block.size >= processSize && block.size < minSize) {
-                minSize = block.size;
-                selectedBlock = block; // Found the smallest block that fits
-            }
-        }
-    } else if (allocationStrategy == 3) { // Worst-Fit Allocation strategy
-        int maxSize = -1;
-        for (MemoryBlock block : memoryBlocks) {
-            System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
-            if (!block.isAllocated && block.size >= processSize && block.size > maxSize) {
-                maxSize = block.size;
-                selectedBlock = block; // Found the largest block that fits
-            }
-        }
-    }
-
-    // If a valid block was found, allocate memory
-    if (selectedBlock != null) {
-        selectedBlock.isAllocated = true;
-        selectedBlock.processID = processID;
-        selectedBlock.internalFragmentation = selectedBlock.size - processSize;
-        System.out.println(processID + " allocated at address " + selectedBlock.startAddress + ", and the internal fragmentation is " + selectedBlock.internalFragmentation);
-    } else {
-        System.out.println("Error: Not enough memory available.");
-    }
-}
-
-    private static void deallocateMemory() {
-        System.out.print("Enter process ID to deallocate: ");
+    private static void allocateMemory() {
+        System.out.print("Enter process ID and size of process: ");
         String processID = scanner.next();
+        int processSize = scanner.nextInt();
 
+        // First, deallocate any existing allocation for this process ID
         for (MemoryBlock block : memoryBlocks) {
             if (block.isAllocated && block.processID.equalsIgnoreCase(processID)) {
                 block.isAllocated = false;
                 block.processID = "Null";
                 block.internalFragmentation = 0;
-                System.out.println("Process " + processID + " has been deallocated.");
-                return;
+                System.out.println("Found existing allocation for " + processID + ". Deallocating it first.");
             }
         }
-        System.out.println("Error: Process ID not found.");
+
+        MemoryBlock selectedBlock = null;
+
+        // Debugging: Print current memory blocks and allocation strategy
+        System.out.println("Allocating memory using strategy: " + (allocationStrategy == 1 ? "First-Fit" : (allocationStrategy == 2 ? "Best-Fit" : "Worst-Fit")));
+
+        // Apply First-Fit Allocation strategy
+        if (allocationStrategy == 1) {
+            for (MemoryBlock block : memoryBlocks) {
+                System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
+                if (!block.isAllocated && block.size >= processSize) {
+                    selectedBlock = block; // Found a block that fits
+                    break; // No need to continue searching once a valid block is found
+                }
+            }
+        } else if (allocationStrategy == 2) { // Best-Fit Allocation strategy
+            int minSize = Integer.MAX_VALUE;
+            for (MemoryBlock block : memoryBlocks) {
+                System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
+                if (!block.isAllocated && block.size >= processSize && block.size < minSize) {
+                    minSize = block.size;
+                    selectedBlock = block; // Found the smallest block that fits
+                }
+            }
+        } else if (allocationStrategy == 3) { // Worst-Fit Allocation strategy
+            int maxSize = -1;
+            for (MemoryBlock block : memoryBlocks) {
+                System.out.println("Checking block (Start-End: " + block.startAddress + "-" + block.endAddress + ", Size: " + block.size + ", Allocated: " + block.isAllocated + ")");
+                if (!block.isAllocated && block.size >= processSize && block.size > maxSize) {
+                    maxSize = block.size;
+                    selectedBlock = block; // Found the largest block that fits
+                }
+            }
+        }
+
+        // If a valid block was found, allocate memory
+        if (selectedBlock != null) {
+            selectedBlock.isAllocated = true;
+            selectedBlock.processID = processID;
+            selectedBlock.internalFragmentation = selectedBlock.size - processSize;
+            System.out.println(processID + " allocated at address " + selectedBlock.startAddress + ", and the internal fragmentation is " + selectedBlock.internalFragmentation);
+        } else {
+            System.out.println("Error: Not enough memory available.");
+        }
+    }
+
+    private static void deallocateMemory() {
+        System.out.print("Enter process ID to deallocate: ");
+        String processID = scanner.next();
+
+        boolean found = false;
+        for (MemoryBlock block : memoryBlocks) {
+            if (block.isAllocated && block.processID.equalsIgnoreCase(processID)) {
+                block.isAllocated = false;
+                block.processID = "Null";
+                block.internalFragmentation = 0;
+                found = true;
+            }
+        }
+        
+        if (found) {
+            System.out.println("Process " + processID + " has been deallocated.");
+        } else {
+            System.out.println("Error: Process ID not found.");
+        }
     }
 
     private static void printMemoryStatus() {
